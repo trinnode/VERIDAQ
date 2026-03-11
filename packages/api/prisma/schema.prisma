@@ -1,0 +1,280 @@
+// schema.prisma
+//
+// Run 'pnpm db:generate' after every change here.
+// Run 'pnpm db:migrate' to apply it to the local dev database.
+//
+// A few design decisions worth calling out:
+// - AuditLog has NO updatedAt and no delete operations ever touch it. It is append-only.
+// - Credential stores only the nullifier and commitment (both hashes). No personal data.
+// - matricNumberHash on VerificationRequest is a sha256 of the matric number, not the number.
+//   We need it to look up the credential but we never store the raw matric number.
+
+generator client {
+  provider = "prisma-client-js"
+  // Default engine is the wasm "client" engine which requires a driver adapter
+  // (PrismaPg). See db.ts for how we pass the adapter.
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection URL moved to prisma/config.ts (Prisma 7 requirement).
+  // The CLI reads it from there; the runtime client reads it from env.ts.
+}
+
+// ═══════════════════════════════════════════════════════
+// Institution
+// ═══════════════════════════════════════════════════════
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+  FLAGGED
+}
+
+enum InstitutionTier {
+  FREE
+  PAID
+}
+
+model Institution {
+  id                String          @id @default(cuid())
+  slugId            String          @unique  // bytes32-compatible slug used on chain, e.g. "futminna"
+  name              String
+  countryCode       String          @default("NG")
+  adminWalletAddress String?        @unique
+  publicSigningKey  String?         // hex-encoded public key, registered on chain
+  onChainId         String?         // bytes32 hex — assigned after on-chain registration
+  kycStatus         KycStatus       @default(PENDING)
+  kycDocumentUrls   String[]        // S3 object keys, not full URLs
+  subscriptionTier  InstitutionTier @default(FREE)
+  isActive          Boolean         @default(false)
+  email             String          @unique  // used for login and notification emails
+  contactPhone      String?
+  websiteUrl        String?
+  logoUrl           String?
+  addressLine       String?
+  state             String?
+  passwordHash      String          // scrypt hash
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  batches           CredentialBatch[]
+  credentials       Credential[]
+  claimDefinitions  ClaimDefinition[]
+  verificationRequests VerificationRequest[]
+  // sessions are not a Prisma relation — Session.actorId is polymorphic
+}
+
+// ═══════════════════════════════════════════════════════
+// Employer
+// ═══════════════════════════════════════════════════════
+
+enum EmployerTier {
+  FREE
+  PAID
+}
+
+model Employer {
+  id                   String       @id @default(cuid())
+  companyName          String
+  cacNumber            String       @unique  // CAC registration number, used for duplicate detection
+  contactName          String
+  contactPhone         String?
+  contactNin           String?      @unique  // NIN or passport number — optional but must be unique if provided
+  contactEmail         String       @unique  // used for login and outbound emails
+  websiteUrl           String?
+  addressLine          String?
+  state                String?
+  kycStatus            KycStatus    @default(PENDING)
+  kycNotes             String?
+  kycDocumentUrls      String[]
+  subscriptionTier     EmployerTier @default(FREE)
+  freeVerificationsUsed Int         @default(0)  // lifetime count, never resets
+  isActive             Boolean      @default(false)
+  passwordHash         String
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  verificationRequests VerificationRequest[]
+  // sessions are not a Prisma relation — Session.actorId is polymorphic
+}
+
+// ═══════════════════════════════════════════════════════
+// Credentials and Batches
+// ═══════════════════════════════════════════════════════
+
+enum BatchStatus {
+  QUEUED
+  VALIDATING
+  VALIDATION_FAILED
+  PROCESSING
+  SUBMITTING_TO_CHAIN
+  AWAITING_CONFIRMATION
+  CONFIRMED
+  FAILED
+}
+
+model CredentialBatch {
+  id               String      @id @default(cuid())
+  institutionId    String
+  institution      Institution @relation(fields: [institutionId], references: [id])
+  uploadedByEmail  String      @default("")  // email of the portal user who uploaded, for audit trail
+  storagePath      String      // key in the storage driver (local path or S3 key)
+  fileHash         String?     // sha256 of the uploaded file, to detect duplicate submissions
+  recordCount      Int         @default(0)    // set once the file is parsed
+  passedCount      Int         @default(0)
+  failedCount      Int         @default(0)
+  onChainTxHash    String?     // populated once the batch tx is confirmed
+  status           BatchStatus @default(QUEUED)
+  errorReport      Json?       // array of RowValidationError objects if validation failed
+  gasUsed          String?     // wei value stored as string to avoid precision loss
+  wasSponsoredGas  Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  confirmedAt      DateTime?
+
+  credentials      Credential[]
+}
+
+model Credential {
+  id             String          @id @default(cuid())
+  institutionId  String
+  institution    Institution     @relation(fields: [institutionId], references: [id])
+  batchId        String?
+  batch          CredentialBatch? @relation(fields: [batchId], references: [id])
+  nullifier      String          @unique  // hex-encoded bytes32, the revocation handle
+  commitment     String          @unique  // hex-encoded bytes32, stored on chain
+  matricNumberHash String        // sha256 of the matric number (NOT the matric number itself)
+  graduationYear Int             // four digit year
+  degreeTypeCode Int             // matches the classification codes in the circuit
+  encryptedPrivateData String    @default("")  // AES-256-GCM encrypted JSON of the full private credential record
+                                 // only the backend can decrypt this to build the proof inputs
+  isRevoked      Boolean         @default(false)  // synced from on-chain RevocationRegistry
+  revokedAt      DateTime?
+  issuedAt       DateTime        @default(now())
+
+  @@index([institutionId])
+  @@index([matricNumberHash, institutionId])
+}
+
+// ═══════════════════════════════════════════════════════
+// Claim Definitions
+// ═══════════════════════════════════════════════════════
+
+enum ClaimType {
+  AUTO    // resolved by the circuit automatically on the backend
+  MANUAL  // requires the institution to explicitly approve or decline
+}
+
+model ClaimDefinition {
+  id            String      @id @default(cuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id])
+  claimCode     String      // internal, auto-generated from label, e.g. "first_class_2024"
+  claimLabel    String      // what employers see, e.g. "First Class Honours"
+  claimType     ClaimType   @default(AUTO)
+  claimTypeCode Int         // matches CLAIM_TYPES constants from @veridaq/shared
+  description   String?
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+
+  @@unique([institutionId, claimCode])
+}
+
+// ═══════════════════════════════════════════════════════
+// Verification Requests
+// ═══════════════════════════════════════════════════════
+
+enum VerificationStatus {
+  PENDING
+  AUTO_PROCESSING
+  AWAITING_INSTITUTION
+  COMPLETED
+  DECLINED
+  RECORD_NOT_FOUND
+  REVOKED
+}
+
+model VerificationRequest {
+  id               String             @id @default(cuid())
+  employerId       String
+  employer         Employer           @relation(fields: [employerId], references: [id])
+  institutionId    String
+  institution      Institution        @relation(fields: [institutionId], references: [id])
+  matricNumberHash String             // sha256 of the matric number the employer submitted
+  claimCode        String
+  claimTypeCode    Int
+  claimThreshold   Int                @default(0)  // only set for CGPA threshold claims
+  customClaimText  String?            // free text for custom claims (claimType 99)
+  status           VerificationStatus @default(PENDING)
+  resultProof      Json?              // StoredProofRecord when status is COMPLETED
+  declineReason    String?
+  requestedAt      DateTime           @default(now())
+  resolvedAt       DateTime?
+
+  @@index([employerId])
+  @@index([institutionId])
+  @@index([matricNumberHash, institutionId])
+}
+
+// ═══════════════════════════════════════════════════════
+// Audit Logs
+// ═══════════════════════════════════════════════════════
+// append-only: never run UPDATE or DELETE against this table.
+// if you need to mark an entry as corrected, add a new entry referencing the old one.
+
+enum AuditActorType {
+  INSTITUTION
+  EMPLOYER
+  PLATFORM_ADMIN
+  SYSTEM
+}
+
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+  PARTIAL
+}
+
+model AuditLog {
+  id           String         @id @default(cuid())
+  actorType    AuditActorType
+  actorIdHash  String         // sha256 of the actor's actual id so the log cannot be used to look up actors
+  actionType   String         // e.g. "BATCH_UPLOAD", "VERIFICATION_REQUEST", "KYC_APPROVE"
+  resourceType String         // e.g. "CredentialBatch", "VerificationRequest"
+  resourceId   String
+  outcome      AuditOutcome
+  metadata     Json?          // anything extra worth knowing about this event
+  timestamp    DateTime       @default(now())
+
+  // no updatedAt because this record must never be modified
+  @@index([actorIdHash])
+  @@index([resourceId])
+  @@index([timestamp])
+}
+
+// ═══════════════════════════════════════════════════════
+// Sessions
+// ═══════════════════════════════════════════════════════
+
+enum SessionActorType {
+  INSTITUTION
+  EMPLOYER
+  PLATFORM_ADMIN
+}
+
+model Session {
+  id            String          @id @default(cuid())
+  // actorId references Institution.id, Employer.id, or a platform admin user id,
+  // depending on actorType. We don't enforce a FK here because Prisma can't
+  // do polymorphic foreign keys cleanly — we validate the actorId in the
+  // application layer when creating sessions.
+  actorId       String
+  actorType     SessionActorType
+  tokenHash     String          @unique  // sha256 of the actual JWT refresh token
+  expiresAt     DateTime
+  createdAt     DateTime        @default(now())
+
+  @@index([actorId])
+}

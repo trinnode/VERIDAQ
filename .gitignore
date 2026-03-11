@@ -1,0 +1,71 @@
+# deps
+node_modules/
+.pnp
+.pnp.js
+
+# build outputs
+.next/
+dist/
+out/
+build/
+
+# env files - never commit these
+.env
+.env.local
+.env.*.local
+
+# foundry build artifacts
+packages/contracts/out/
+packages/contracts/cache/
+
+# circom and snarkjs artifacts that are too big for git
+packages/circuits/pot*.ptau
+packages/circuits/*.zkey
+packages/circuits/*.wtns
+
+# generated verifier (re-generated from zkey, not hand-written)
+# we DO commit ZKVerifier.sol because it is the output of the setup
+
+# database
+*.db
+*.sqlite
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/settings.json
+.idea/
+.env
+.env.local
+.env.*.local
+.env.example
+.env*
+SKILLS.md
+
+# additional safety ignores
+.envrc
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# test and coverage artifacts
+coverage/
+.nyc_output/
+
+# cache/tooling outputs
+.turbo/
+.cache/
+tmp/
+temp/
+
+# foundry broadcast outputs (deployment metadata)
+packages/contracts/broadcast/
