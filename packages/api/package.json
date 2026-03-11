@@ -1,0 +1,53 @@
+{
+  "name": "@veridaq/api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VERIDAQ backend API. Fastify server with Prisma, BullMQ, and ZKP proof generation.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc && tsc-alias",
+    "start": "node dist/server.js",
+    "worker": "tsx src/worker.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1006.0",
+    "@fastify/cors": "latest",
+    "@fastify/helmet": "latest",
+    "@fastify/jwt": "latest",
+    "@fastify/multipart": "latest",
+    "@fastify/rate-limit": "latest",
+    "@prisma/adapter-pg": "7.4.2",
+    "@prisma/client": "latest",
+    "@prisma/config": "latest",
+    "@veridaq/shared": "workspace:*",
+    "bullmq": "latest",
+    "circomlibjs": "latest",
+    "dotenv": "latest",
+    "exceljs": "latest",
+    "fastify": "latest",
+    "fastify-plugin": "latest",
+    "nodemailer": "latest",
+    "pg": "^8.16.3",
+    "snarkjs": "latest",
+    "viem": "latest",
+    "zod": "latest",
+    "zod-to-json-schema": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/nodemailer": "latest",
+    "@types/pg": "^8.11.14",
+    "pino-pretty": "latest",
+    "prisma": "latest",
+    "tsc-alias": "latest",
+    "tsx": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  }
+}

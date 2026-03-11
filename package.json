@@ -1,0 +1,29 @@
+{
+  "name": "veridaq",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Verified Academic Qualifications. Privacy-preserving credential verification using ZKPs.",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "NODE_OPTIONS=--max_old_space_size=8192 turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "simulate:workflow": "node scripts/simulate-workflow.mjs",
+    "deploy:contracts": "bash scripts/deploy-verify-contracts.sh",
+    "verify:contracts": "bash scripts/verify-contracts.sh"
+  },
+  "devDependencies": {
+    "turbo": "latest"
+  },
+  "packageManager": "pnpm@10.27.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "blake-hash",
+      "esbuild",
+      "msgpackr-extract",
+      "prisma",
+      "unrs-resolver"
+    ]
+  }
+}
