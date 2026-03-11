@@ -2,7 +2,23 @@
 
 import * as React from "react";
 import { useForm } from "react-hook-form";
-import { Loader2, ShieldAlert } from "lucide-react";
+// Custom inline icons — no lucide dependency
+type IP = { className?: string };
+const ShieldAlert = ({ className }: IP) => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.75}
+    strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M10 2L16 5V10c0 3.5-6 8-6 8S4 13.5 4 10V5L10 2Z" />
+    <line x1="10" y1="8" x2="10" y2="12" />
+    <circle cx="10" cy="14" r="0.75" fill="currentColor" stroke="none" />
+  </svg>
+);
+const Loader2 = ({ className }: IP) => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2}
+    strokeLinecap="round" className={className}>
+    <circle cx="10" cy="10" r="7" strokeOpacity={0.2} />
+    <path d="M10 3a7 7 0 017 7" />
+  </svg>
+);
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/console/ui/button";
@@ -41,7 +57,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-white flex">
       {/* Left panel */}
-      <div className="hidden lg:flex w-[420px] bg-[#1A1A2E] flex-col justify-between p-12 shrink-0">
+      <div className="hidden lg:flex w-[420px] bg-[#520061] flex-col justify-between p-12 shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
             <ShieldAlert className="w-4 h-4 text-white" />
@@ -65,15 +81,15 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           <div className="mb-10">
             <div className="flex items-center gap-2 mb-6 lg:hidden">
-              <div className="w-7 h-7 bg-[#1A1A2E] rounded-md flex items-center justify-center">
+              <div className="w-7 h-7 bg-[#520061] rounded-md flex items-center justify-center">
                 <ShieldAlert className="w-4 h-4 text-white" />
               </div>
-              <span className="font-bold text-[#1A1A2E]">VERIDAQ</span>
+              <span className="font-bold text-[#520061]">VERIDAQ</span>
             </div>
-            <h1 className="text-2xl font-bold text-[#1A1A2E] tracking-tight mb-1">
+            <h1 className="text-2xl font-bold text-[#520061] tracking-tight mb-1">
               Admin sign in
             </h1>
-            <p className="text-sm text-[#1A1A2E]/50">
+            <p className="text-sm text-[#520061]/50">
               Restricted to platform administrators only.
             </p>
           </div>
@@ -111,7 +127,7 @@ export default function LoginPage() {
             </div>
             <Button
               type="submit"
-              className="w-full bg-[#1A1A2E] hover:bg-[#16213E] text-white font-semibold h-11"
+              className="w-full bg-[#520061] hover:bg-[#6B1953] text-white font-semibold h-11"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -122,8 +138,8 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-8 text-center text-xs text-[#1A1A2E]/40">
-            <a href="/" className="text-[#1A1A2E] font-medium hover:underline">
+          <p className="mt-8 text-center text-xs text-[#520061]/40">
+            <a href="/" className="text-[#520061] font-medium hover:underline">
               ← Back to VERIDAQ
             </a>
           </p>

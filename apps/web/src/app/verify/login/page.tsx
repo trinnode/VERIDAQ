@@ -4,7 +4,22 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { Loader2, ShieldCheck } from "lucide-react";
+// Custom inline icons — no lucide dependency
+type IP = { className?: string };
+const ShieldCheck = ({ className }: IP) => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.75}
+    strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M10 2L16 5V10c0 3.5-6 8-6 8S4 13.5 4 10V5L10 2Z" />
+    <path d="M7 10l2.5 2.5L13 8" />
+  </svg>
+);
+const Loader2 = ({ className }: IP) => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2}
+    strokeLinecap="round" className={className}>
+    <circle cx="10" cy="10" r="7" strokeOpacity={0.2} />
+    <path d="M10 3a7 7 0 017 7" />
+  </svg>
+);
 import Link from "next/link";
 import { Button } from "@/components/verify/ui/button";
 import { Input } from "@/components/verify/ui/input";
@@ -42,7 +57,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-white flex">
       {/* Left panel */}
-      <div className="hidden lg:flex w-[420px] bg-[#1A1A2E] flex-col justify-between p-12 shrink-0">
+      <div className="hidden lg:flex w-[420px] bg-[#520061] flex-col justify-between p-12 shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
             <ShieldCheck className="w-4 h-4 text-white" />
@@ -66,15 +81,15 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           <div className="mb-10">
             <div className="flex items-center gap-2 mb-6 lg:hidden">
-              <div className="w-7 h-7 bg-[#1A1A2E] rounded-md flex items-center justify-center">
+              <div className="w-7 h-7 bg-[#520061] rounded-md flex items-center justify-center">
                 <ShieldCheck className="w-4 h-4 text-white" />
               </div>
-              <span className="font-bold text-[#1A1A2E]">VERIDAQ</span>
+              <span className="font-bold text-[#520061]">VERIDAQ</span>
             </div>
-            <h1 className="text-2xl font-bold text-[#1A1A2E] tracking-tight mb-1">
+            <h1 className="text-2xl font-bold text-[#520061] tracking-tight mb-1">
               Sign in to your account
             </h1>
-            <p className="text-sm text-[#1A1A2E]/50">
+            <p className="text-sm text-[#520061]/50">
               Verify academic credentials issued by institutions.
             </p>
           </div>
@@ -108,7 +123,7 @@ export default function LoginPage() {
             </div>
             <Button
               type="submit"
-              className="w-full bg-[#1A1A2E] hover:bg-[#16213E] text-white font-semibold h-11"
+              className="w-full bg-[#520061] hover:bg-[#6B1953] text-white font-semibold h-11"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -119,14 +134,14 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-[#1A1A2E]/50">
+          <p className="mt-6 text-center text-sm text-[#520061]/50">
             Don&apos;t have an account?{" "}
-            <Link href="/verify/register" className="text-[#1A1A2E] font-semibold hover:underline">
+            <Link href="/verify/register" className="text-[#520061] font-semibold hover:underline">
               Register your company
             </Link>
           </p>
 
-          <p className="mt-4 text-center text-xs text-[#1A1A2E]/40">
+          <p className="mt-4 text-center text-xs text-[#520061]/40">
             <a href="/" className="hover:underline">← Back to VERIDAQ</a>
           </p>
         </div>

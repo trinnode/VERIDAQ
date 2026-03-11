@@ -4,7 +4,29 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { Loader2, ShieldCheck, CheckCircle2 } from "lucide-react";
+// Custom inline icons — no lucide dependency
+type IP = { className?: string };
+const ShieldCheck = ({ className }: IP) => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.75}
+    strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M10 2L16 5V10c0 3.5-6 8-6 8S4 13.5 4 10V5L10 2Z" />
+    <path d="M7 10l2.5 2.5L13 8" />
+  </svg>
+);
+const CheckCircle2 = ({ className }: IP) => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.75}
+    strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="10" cy="10" r="8" />
+    <path d="M6.5 10.5l2.5 2.5 4.5-5.5" />
+  </svg>
+);
+const Loader2 = ({ className }: IP) => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2}
+    strokeLinecap="round" className={className}>
+    <circle cx="10" cy="10" r="7" strokeOpacity={0.2} />
+    <path d="M10 3a7 7 0 017 7" />
+  </svg>
+);
 import Link from "next/link";
 import { Button } from "@/components/verify/ui/button";
 import { Input } from "@/components/verify/ui/input";
@@ -57,11 +79,11 @@ export default function RegisterPage() {
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white px-4">
-        <div className="bg-white rounded-2xl border border-[#1A1A2E]/10 p-10 max-w-md w-full flex flex-col items-center gap-4 text-center">
+        <div className="bg-white rounded-2xl border border-[#520061]/10 p-10 max-w-md w-full flex flex-col items-center gap-4 text-center">
           <div className="flex items-center justify-center w-16 h-16 rounded-full bg-success/15 mb-2">
             <CheckCircle2 className="w-8 h-8 text-success" />
           </div>
-          <h2 className="text-2xl font-bold text-[#1A1A2E]">Application Submitted</h2>
+          <h2 className="text-2xl font-bold text-[#520061]">Application Submitted</h2>
           <p className="text-muted-foreground text-sm">
             Thank you for registering. Your KYC application is under review. You'll receive an
             email once your account has been approved by the VERIDAQ team.
@@ -78,18 +100,18 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-white px-4 py-10">
       <div className="w-full max-w-xl">
         <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#1A1A2E]/10 mb-3">
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#520061]/10 mb-3">
             <ShieldCheck className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">VERIDAQ</h1>
-          <p className="text-[#1A1A2E]/60 text-sm mt-0.5">Register Your Company</p>
+          <p className="text-[#520061]/60 text-sm mt-0.5">Register Your Company</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#1A1A2E]/10 p-8">
+        <div className="bg-white rounded-2xl border border-[#520061]/10 p-8">
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
             {/* Company details */}
             <div>
-              <h3 className="font-bold text-[#1A1A2E] mb-3">Company Details</h3>
+              <h3 className="font-bold text-[#520061] mb-3">Company Details</h3>
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="companyName">Company name *</Label>
@@ -142,7 +164,7 @@ export default function RegisterPage() {
 
             {/* Contact person */}
             <div>
-              <h3 className="font-bold text-[#1A1A2E] mb-3">Contact Person</h3>
+              <h3 className="font-bold text-[#520061] mb-3">Contact Person</h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -190,7 +212,7 @@ export default function RegisterPage() {
 
             {/* Password */}
             <div>
-              <h3 className="font-bold text-[#1A1A2E] mb-3">Account Password</h3>
+              <h3 className="font-bold text-[#520061] mb-3">Account Password</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="password">Password *</Label>
@@ -227,14 +249,14 @@ export default function RegisterPage() {
               <input
                 id="terms"
                 type="checkbox"
-                className="mt-0.5 h-4 w-4 rounded border-border accent-[#1A1A2E]"
+                className="mt-0.5 h-4 w-4 rounded border-border accent-[#520061]"
                 {...register("acceptedTerms", {
                   validate: (v) => v || "You must accept the terms of service",
                 })}
               />
               <Label htmlFor="terms" className="font-normal text-sm cursor-pointer">
                 I have read and accept the{" "}
-                <a href="#" className="text-[#1A1A2E] font-semibold hover:underline">
+                <a href="#" className="text-[#520061] font-semibold hover:underline">
                   VERIDAQ Terms of Service
                 </a>{" "}
                 and understand that my company information will be reviewed before activation.
@@ -253,7 +275,7 @@ export default function RegisterPage() {
 
           <p className="mt-5 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/verify/login" className="text-[#1A1A2E] font-semibold hover:underline">
+            <Link href="/verify/login" className="text-[#520061] font-semibold hover:underline">
               Sign in
             </Link>
           </p>
