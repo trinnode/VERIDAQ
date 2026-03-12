@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, type FieldErrors, type Resolver } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Loader2, X, CheckCircle2 } from "lucide-react";
@@ -45,6 +44,34 @@ const claimSchema = z.object({
 
 type ClaimValues = z.infer<typeof claimSchema>;
 
+const claimFormResolver: Resolver<ClaimValues> = async (values) => {
+  const parsed = claimSchema.safeParse(values);
+
+  if (parsed.success) {
+    return {
+      values: parsed.data,
+      errors: {},
+    };
+  }
+
+  const errors: FieldErrors<ClaimValues> = {};
+
+  for (const issue of parsed.error.issues) {
+    const field = issue.path[0];
+    if (typeof field === "string" && !(field in errors)) {
+      (errors as Record<string, { type: string; message: string }>)[field] = {
+        type: issue.code,
+        message: issue.message,
+      };
+    }
+  }
+
+  return {
+    values: {},
+    errors,
+  };
+};
+
 // ─── Claim Form Dialog ────────────────────────────────────────────────────────
 
 function ClaimFormDialog({
@@ -68,7 +95,7 @@ function ClaimFormDialog({
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<ClaimValues>({
-    resolver: zodResolver(claimSchema as z.ZodTypeAny),
+    resolver: claimFormResolver,
     defaultValues: {
       claimLabel: existing?.claimLabel ?? "",
       claimType: existing?.claimType ?? "AUTO",
