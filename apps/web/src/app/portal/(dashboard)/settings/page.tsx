@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, type FieldErrors, type Resolver } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2, Building2, Lock, User } from "lucide-react";
@@ -37,6 +36,60 @@ const passwordSchema = z
 
 type PasswordValues = z.infer<typeof passwordSchema>;
 
+const profileFormResolver: Resolver<ProfileValues> = async (values) => {
+  const parsed = profileSchema.safeParse(values);
+
+  if (parsed.success) {
+    return {
+      values: parsed.data,
+      errors: {},
+    };
+  }
+
+  const errors: FieldErrors<ProfileValues> = {};
+  for (const issue of parsed.error.issues) {
+    const field = issue.path[0];
+    if (typeof field === "string" && !(field in errors)) {
+      (errors as Record<string, { type: string; message: string }>)[field] = {
+        type: issue.code,
+        message: issue.message,
+      };
+    }
+  }
+
+  return {
+    values: {},
+    errors,
+  };
+};
+
+const passwordFormResolver: Resolver<PasswordValues> = async (values) => {
+  const parsed = passwordSchema.safeParse(values);
+
+  if (parsed.success) {
+    return {
+      values: parsed.data,
+      errors: {},
+    };
+  }
+
+  const errors: FieldErrors<PasswordValues> = {};
+  for (const issue of parsed.error.issues) {
+    const field = issue.path[0];
+    if (typeof field === "string" && !(field in errors)) {
+      (errors as Record<string, { type: string; message: string }>)[field] = {
+        type: issue.code,
+        message: issue.message,
+      };
+    }
+  }
+
+  return {
+    values: {},
+    errors,
+  };
+};
+
 export default function SettingsPage() {
   const { data: profile, isLoading } = useProfile();
   const updateInstitution = usePortalStore((s) => s.updateInstitution);
@@ -49,7 +102,7 @@ export default function SettingsPage() {
     reset: resetProfile,
     formState: { errors: profileErrors, isSubmitting: profileSubmitting, isDirty: profileDirty },
   } = useForm<ProfileValues>({
-    resolver: zodResolver(profileSchema as z.ZodTypeAny),
+    resolver: profileFormResolver,
     defaultValues: {
       name: profile?.name ?? "",
       email: profile?.email ?? "",
@@ -93,7 +146,7 @@ export default function SettingsPage() {
     handleSubmit: handlePwdSubmit,
     reset: resetPwd,
     formState: { errors: pwdErrors, isSubmitting: pwdSubmitting },
-  } = useForm<PasswordValues>({ resolver: zodResolver(passwordSchema as z.ZodTypeAny) });
+  } = useForm<PasswordValues>({ resolver: passwordFormResolver });
 
   async function onPasswordSubmit(values: PasswordValues) {
     if (!token) return;
