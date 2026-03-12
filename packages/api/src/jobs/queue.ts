@@ -22,6 +22,10 @@ let batchQueue: Queue | null = null;
 // Batch credential processing queue
 // Jobs: { batchId: string, institutionId: string }
 export function getBatchQueue() {
+  if (env.DISABLE_QUEUE) {
+    throw new Error("Queue processing is disabled by DISABLE_QUEUE=true");
+  }
+
   if (!batchQueue) {
     batchQueue = new Queue("credential-batch", {
       connection,

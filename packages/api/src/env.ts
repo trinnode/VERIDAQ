@@ -19,6 +19,7 @@ const schema = z.object({
 
   DATABASE_URL:    z.string().min(1, "DATABASE_URL is required"),
   REDIS_URL:       z.string().default("redis://localhost:6379"),
+  DISABLE_QUEUE:   z.union([z.literal("true"), z.literal("false"), z.boolean()]).optional().transform((value) => value === true || value === "true"),
 
   JWT_SECRET:      z.string().min(32, "JWT_SECRET must be at least 32 chars"),
   JWT_EXPIRES_IN:  z.string().default("7d"),

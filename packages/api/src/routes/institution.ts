@@ -16,6 +16,7 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireRole } from "../middleware/requireRole.js";
 import { getBatchQueue } from "../jobs/queue.js";
+import { env } from "../env.js";
 
 const updateInstitutionSchema = z.object({
   contactPhone:    z.string().optional(),
@@ -115,6 +116,14 @@ export const institutionRoutes: FastifyPluginAsync = async (fastify) => {
   // -----------------------------------------------------------------------
   fastify.post("/me/batches", async (request, reply) => {
     const user = request.user as { sub: string };
+
+    if (env.DISABLE_QUEUE) {
+      return reply.code(503).send({
+        statusCode: 503,
+        error: "Service Unavailable",
+        message: "Batch processing is disabled on this deployment. Please use a deployment with a running worker.",
+      });
+    }
 
     // First confirm institution is active + KYC approved
     const institution = await prisma.institution.findUnique({
