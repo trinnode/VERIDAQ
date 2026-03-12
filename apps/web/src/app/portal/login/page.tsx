@@ -2,8 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, type FieldErrors, type Resolver } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
 // Custom inline icons — no lucide dependency
@@ -36,6 +35,33 @@ const schema = z.object({
 
 type LoginValues = z.infer<typeof schema>;
 
+const loginFormResolver: Resolver<LoginValues> = async (values) => {
+  const parsed = schema.safeParse(values);
+
+  if (parsed.success) {
+    return {
+      values: parsed.data,
+      errors: {},
+    };
+  }
+
+  const errors: FieldErrors<LoginValues> = {};
+  for (const issue of parsed.error.issues) {
+    const field = issue.path[0];
+    if (typeof field === "string" && !(field in errors)) {
+      (errors as Record<string, { type: string; message: string }>)[field] = {
+        type: issue.code,
+        message: issue.message,
+      };
+    }
+  }
+
+  return {
+    values: {},
+    errors,
+  };
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const setSession = usePortalStore((s) => s.setSession);
@@ -44,7 +70,7 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginValues>({ resolver: zodResolver(schema as z.ZodTypeAny) });
+  } = useForm<LoginValues>({ resolver: loginFormResolver });
 
   async function onSubmit(values: LoginValues) {
     try {
