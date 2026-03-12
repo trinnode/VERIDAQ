@@ -37,10 +37,11 @@ export default function VerificationsPage() {
   const { data: verifications, isLoading } = useVerifications();
   const [statusFilter, setStatusFilter] = React.useState("ALL");
 
+  const items = verifications?.records ?? [];
   const filtered =
     statusFilter === "ALL"
-      ? (verifications ?? [])
-      : (verifications ?? []).filter((v) => v.status === statusFilter);
+      ? items
+      : items.filter((v) => v.status === statusFilter);
 
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">

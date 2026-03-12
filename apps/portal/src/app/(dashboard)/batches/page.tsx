@@ -100,7 +100,7 @@ export default function BatchesPage() {
                     ))}
                   </TableRow>
                 ))
-              ) : !data || data.length === 0 ? (
+              ) : !data || data.batches.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-16">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -115,7 +115,7 @@ export default function BatchesPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                data.map((batch) => <BatchRow key={batch.id} batch={batch} />)
+                data.batches.map((batch) => <BatchRow key={batch.id} batch={batch} />)
               )}
             </TableBody>
           </Table>

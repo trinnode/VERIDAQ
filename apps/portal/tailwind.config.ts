@@ -11,15 +11,24 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        /* Matches SKILLS.md colour spec exactly */
         navy: {
           DEFAULT: "#520061",
           light: "#6B1953",
+          50:  "#fdf0ff",
+          100: "#f5dcfc",
+          200: "#e9b3f7",
+          300: "#d17aec",
+          400: "#b040d2",
+          500: "#870da8",
+          600: "#6b0082",
+          700: "#520061",
+          800: "#3d0048",
+          900: "#1e0024",
         },
-        success: "#10B981",
-        warning: "#F59E0B",
-        pending: "#3B82F6",
-        danger: "#EF4444",
+        success: "#16a34a",
+        danger:  "#e11d48",
+        warning: "#ea580c",
+        pending: "#7c3aed",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -60,7 +69,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {

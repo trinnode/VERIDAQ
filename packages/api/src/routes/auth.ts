@@ -48,7 +48,7 @@ async function verifyPassword(stored: string, supplied: string): Promise<boolean
 const loginBodySchema = z.object({
   email:     z.string().email(),
   password:  z.string().min(8),
-  actorType: z.enum(["INSTITUTION", "EMPLOYER"]),
+  actorType: z.enum(["INSTITUTION", "EMPLOYER", "ADMIN"]),
 });
 
 export const authRoutes: FastifyPluginAsync = async (fastify) => {
@@ -71,7 +71,16 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     let storedHash: string;
     let actorName: string;
 
-    if (actorType === "INSTITUTION") {
+    if (actorType === "ADMIN") {
+      // Platform admin — credentials come from environment variables
+      if (email !== env.ADMIN_EMAIL || password !== env.ADMIN_PASSWORD) {
+        return reply.code(401).send({ statusCode: 401, error: "Unauthorized", message: "Invalid credentials." });
+      }
+
+      actorId    = "platform-admin";
+      storedHash = ""; // not used — we compared directly above
+      actorName  = "Platform Admin";
+    } else if (actorType === "INSTITUTION") {
       const institution = await prisma.institution.findUnique({
         where: { email },
         select: { id: true, name: true, passwordHash: true, isActive: true },
@@ -107,25 +116,32 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       actorName  = employer.companyName;
     }
 
-    const passwordOk = await verifyPassword(storedHash, password);
-    if (!passwordOk) {
-      return reply.code(401).send({ statusCode: 401, error: "Unauthorized", message: "Invalid credentials." });
+    // For ADMIN, password was already verified against env vars above
+    if (actorType !== "ADMIN") {
+      const passwordOk = await verifyPassword(storedHash, password);
+      if (!passwordOk) {
+        return reply.code(401).send({ statusCode: 401, error: "Unauthorized", message: "Invalid credentials." });
+      }
     }
 
     // Sign a JWT — payload matches what requireRole() and the audit logger expect
+    const jwtRole = actorType === "ADMIN" ? "ADMIN" : actorType;
     const token = fastify.jwt.sign(
-      { sub: actorId, role: actorType },
+      { sub: actorId, role: jwtRole },
       { expiresIn: env.JWT_EXPIRES_IN }
     );
 
     // Store sha256 of the token — never the token itself
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
+    // Map actorType to the SessionActorType enum in the DB
+    const sessionActorType = actorType === "ADMIN" ? "PLATFORM_ADMIN" : actorType;
+
     // Write a session entry so we can invalidate it on logout
     await prisma.session.create({
       data: {
         actorId,
-        actorType: actorType as "INSTITUTION" | "EMPLOYER",
+        actorType: sessionActorType as "INSTITUTION" | "EMPLOYER" | "PLATFORM_ADMIN",
         tokenHash,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days default
       },

@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindAnimate from "tailwindcss-animate";
 
 const config: Config = {
   darkMode: ["class"],
@@ -13,11 +14,21 @@ const config: Config = {
         navy: {
           DEFAULT: "#520061",
           light: "#6B1953",
+          50:  "#fdf0ff",
+          100: "#f5dcfc",
+          200: "#e9b3f7",
+          300: "#d17aec",
+          400: "#b040d2",
+          500: "#870da8",
+          600: "#6b0082",
+          700: "#520061",
+          800: "#3d0048",
+          900: "#1e0024",
         },
-        success: "#10B981",
-        danger: "#EF4444",
-        warning: "#F59E0B",
-        pending: "#3B82F6",
+        success: "#16a34a",
+        danger:  "#e11d48",
+        warning: "#ea580c",
+        pending: "#7c3aed",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -43,13 +54,13 @@ const config: Config = {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
       },
       borderRadius: {
@@ -58,11 +69,25 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
       },
     },
   },
-  plugins: [],
+  plugins: [tailwindAnimate],
 };
 
 export default config;

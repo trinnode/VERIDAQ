@@ -149,20 +149,24 @@ export interface DashboardStats {
 export const adminApi = {
   request,
 
-  login: (email: string, password: string) =>
-    request<{ admin: Admin; token: string }>("/admin/login", {
+  login: async (email: string, password: string) => {
+    const res = await request<{ token: string; actor: { id: string; name: string; role: string } }>("/v1/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
-    }),
+      body: JSON.stringify({ email, password, actorType: "ADMIN" }),
+    });
+    return { token: res.token, admin: { id: res.actor.id, email, name: res.actor.name } as Admin };
+  },
 
   logout: () =>
-    request<void>("/admin/logout", { method: "POST" }),
+    request<void>("/v1/auth/logout", { method: "POST" }),
 
-  getProfile: () =>
-    request<{ admin: Admin }>("/admin/profile"),
+  getProfile: async () => {
+    // Admin profile is derived from the JWT — no separate endpoint
+    return { admin: null };
+  },
 
   getDashboardStats: () =>
-    request<DashboardStats>("/admin/stats"),
+    request<DashboardStats>("/v1/admin/stats"),
 
   // Institutions
   getInstitutions: (params?: { status?: string; page?: number; q?: string }) => {
@@ -171,73 +175,85 @@ export const adminApi = {
     if (params?.page) qs.set("page", String(params.page));
     if (params?.q) qs.set("q", params.q);
     return request<{ institutions: Institution[]; total: number }>(
-      `/admin/institutions?${qs.toString()}`
+      `/v1/admin/institutions?${qs.toString()}`
     );
   },
 
   getInstitution: (id: string) =>
-    request<{ institution: Institution }>(`/admin/institutions/${id}`),
+    request<{ institution: Institution }>(`/v1/admin/institutions/${id}`),
 
   approveInstitution: (id: string) =>
-    request<void>(`/admin/institutions/${id}/approve`, { method: "POST" }),
+    request<void>(`/v1/admin/institutions/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ kycStatus: "APPROVED" }),
+    }),
 
   suspendInstitution: (id: string, reason: string) =>
-    request<void>(`/admin/institutions/${id}/suspend`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
+    request<void>(`/v1/admin/institutions/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ kycStatus: "SUSPENDED" }),
     }),
 
   rejectInstitution: (id: string, reason: string) =>
-    request<void>(`/admin/institutions/${id}/reject`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
+    request<void>(`/v1/admin/institutions/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ kycStatus: "REJECTED" }),
     }),
+
+  deactivateInstitution: (id: string) =>
+    request<void>(`/v1/admin/institutions/${id}/deactivate`, { method: "PATCH" }),
+
+  reactivateInstitution: (id: string) =>
+    request<void>(`/v1/admin/institutions/${id}/reactivate`, { method: "PATCH" }),
 
   // Employers
   getEmployers: (params?: { status?: string; page?: number; q?: string }) => {
     const qs = new URLSearchParams();
-    if (params?.status) qs.set("status", params.status);
+    if (params?.status) qs.set("kycStatus", params.status);
     if (params?.page) qs.set("page", String(params.page));
     if (params?.q) qs.set("q", params.q);
     return request<{ employers: Employer[]; total: number }>(
-      `/admin/employers?${qs.toString()}`
+      `/v1/admin/employers?${qs.toString()}`
     );
   },
 
   getEmployer: (id: string) =>
-    request<{ employer: Employer }>(`/admin/employers/${id}`),
+    request<{ employer: Employer }>(`/v1/admin/employers/${id}`),
 
   approveEmployer: (id: string) =>
-    request<void>(`/admin/employers/${id}/approve`, { method: "POST" }),
+    request<void>(`/v1/admin/employers/${id}/kyc`, {
+      method: "PATCH",
+      body: JSON.stringify({ decision: "APPROVED" }),
+    }),
 
   suspendEmployer: (id: string, reason: string) =>
-    request<void>(`/admin/employers/${id}/suspend`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
+    request<void>(`/v1/admin/employers/${id}/kyc`, {
+      method: "PATCH",
+      body: JSON.stringify({ decision: "REJECTED", notes: reason }),
     }),
 
   rejectEmployer: (id: string, reason: string) =>
-    request<void>(`/admin/employers/${id}/reject`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
+    request<void>(`/v1/admin/employers/${id}/kyc`, {
+      method: "PATCH",
+      body: JSON.stringify({ decision: "REJECTED", notes: reason }),
     }),
 
   // Audit
   getAuditLogs: (params?: { actorType?: string; page?: number }) => {
     const qs = new URLSearchParams();
-    if (params?.actorType) qs.set("actorType", params.actorType);
+    if (params?.actorType) qs.set("actorId", params.actorType);
     if (params?.page) qs.set("page", String(params.page));
     return request<{ logs: AuditLogEntry[]; total: number }>(
-      `/admin/audit?${qs.toString()}`
+      `/v1/admin/audit-logs?${qs.toString()}`
     );
   },
 
   // Health
-  getHealth: () => request<SystemHealth>("/admin/health"),
+  getHealth: () => request<SystemHealth>("/v1/admin/health"),
 
   // Billing
   getSponsoredPoolBalance: () =>
-    request<{ balance: string; currency: string }>("/admin/billing/sponsored-pool"),
+    request<{ balance: string; currency: string }>("/v1/admin/billing/sponsored-pool"),
 
   depositToSponsoredPool: (amount: string) =>
     request<void>("/admin/billing/sponsored-pool/deposit", {

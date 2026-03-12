@@ -105,38 +105,43 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
 export const employerApi = {
   request,
 
-  login: (email: string, password: string) =>
-    request<{ token: string; employer: Employer }>("/v1/auth/employer/login", {
+  login: async (email: string, password: string) => {
+    const res = await request<{ token: string; actor: { id: string; name: string; role: string } }>("/v1/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
-    }),
+      body: JSON.stringify({ email, password, actorType: "EMPLOYER" }),
+    });
+    return {
+      token: res.token,
+      employer: { id: res.actor.id, companyName: res.actor.name, email } as Employer,
+    };
+  },
 
   logout: () =>
     request<void>("/v1/auth/logout", { method: "POST" }),
 
   getProfile: () =>
-    request<{ employer: Employer; freeVerificationsRemaining: number }>("/v1/employer/profile"),
+    request<Employer>("/v1/employers/me"),
 
   getInstitutions: () =>
-    request<Institution[]>("/v1/employer/institutions"),
+    request<Institution[]>("/v1/employers/institutions"),
 
   getInstitutionClaims: (institutionId: string) =>
-    request<ClaimDefinition[]>(`/v1/employer/institutions/${institutionId}/claims`),
+    request<ClaimDefinition[]>(`/v1/employers/institutions/${institutionId}/claims`),
 
   submitVerification: (input: SubmitVerificationInput) =>
-    request<VerificationRequest>("/v1/employer/verify", {
+    request<VerificationRequest>("/v1/verifications", {
       method: "POST",
       body: JSON.stringify(input),
     }),
 
   getVerifications: () =>
-    request<VerificationRequest[]>("/v1/employer/verifications"),
+    request<{ records: VerificationRequest[]; total: number }>("/v1/employers/me/verifications"),
 
   getVerification: (id: string) =>
-    request<VerificationRequest>(`/v1/employer/verifications/${id}`),
+    request<VerificationRequest>(`/v1/verifications/${id}`),
 
   downloadReport: async (id: string) => {
-    const res = await fetch(`${API_BASE}/v1/employer/verifications/${id}/report`, {
+    const res = await fetch(`${API_BASE}/v1/verifications/${id}/report`, {
       headers: _token ? { Authorization: `Bearer ${_token}` } : {},
       credentials: "include",
     });
@@ -156,8 +161,16 @@ export const employerApi = {
     contactIdUrl?: string;
     acceptedTerms: boolean;
   }) =>
-    request<{ message: string }>("/v1/auth/employer/register", {
+    request<{ message: string }>("/v1/employers/register", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        companyName: data.companyName,
+        email: data.contactEmail,
+        password: data.password,
+        cacNumber: data.cacNumber,
+        contactName: data.contactName,
+        contactNin: data.contactNin,
+        websiteUrl: data.websiteUrl,
+      }),
     }),
 };

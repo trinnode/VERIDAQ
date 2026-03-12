@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Loader2, X, CheckCircle2 } from "lucide-react";
@@ -68,7 +67,16 @@ function ClaimFormDialog({
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<ClaimValues>({
-    resolver: zodResolver(claimSchema),
+    resolver: async (values) => {
+      const r = claimSchema.safeParse(values);
+      if (r.success) return { values: r.data, errors: {} };
+      const errs: Record<string, { type: string; message: string }> = {};
+      for (const issue of r.error.issues) {
+        const k = String(issue.path[0] ?? "");
+        if (k) errs[k] = { type: "validation", message: issue.message };
+      }
+      return { values: {} as ClaimValues, errors: errs };
+    },
     defaultValues: {
       claimLabel: existing?.claimLabel ?? "",
       claimType: existing?.claimType ?? "AUTO",

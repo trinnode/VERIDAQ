@@ -50,7 +50,7 @@ export default function VerifyPage() {
   const { data: claims, isLoading: claimsLoading } = useInstitutionClaims(selectedInstitutionId);
   const submitMutation = useSubmitVerification();
 
-  const remaining = profileData?.freeVerificationsRemaining ?? 0;
+  const remaining = (profileData?.freeVerificationsLimit ?? 5) - (profileData?.freeVerificationsUsed ?? 0);
   const noQuota = remaining === 0 && !profileLoading;
   const lowQuota = remaining === 1 && !profileLoading;
 

@@ -2,22 +2,89 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --navy: #520061;
-  --navy-light: #6B1953;
-  --success: #10b981;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --pending: #3b82f6;
-  --background: #ffffff;
-  --foreground: #520061;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
+@layer base {
+  :root {
+    /* Core palette: white + #520061 purple */
+    --background: 0 0% 100%;
+    --foreground: 291 100% 19%;      /* #520061 */
+
+    --card: 0 0% 100%;
+    --card-foreground: 291 100% 19%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 291 100% 19%;
+
+    --primary: 291 100% 19%;         /* #520061 */
+    --primary-foreground: 0 0% 100%; /* white */
+
+    --secondary: 318 62% 26%;        /* #6B1953 */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 291 20% 96%;            /* near-white purple tint */
+    --muted-foreground: 291 12% 46%;
+
+    --accent: 291 100% 19%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 347 77% 50%;      /* rose-red #E11D48 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 291 15% 91%;
+    --input: 291 15% 91%;
+    --ring: 291 100% 19%;
+
+    --radius: 0.5rem;
+
+    /* Status / notification colors */
+    --success: #16a34a;   /* forest green */
+    --warning: #ea580c;   /* burnt orange */
+    --danger: #e11d48;    /* deep rose */
+    --pending: #7c3aed;   /* violet — complements #520061 */
+  }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-inter), system-ui, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter), system-ui, sans-serif;
+  }
+
+  /* Reset box shadows globally — no shadows per design spec */
+  *,
+  *::before,
+  *::after {
+    box-shadow: none !important;
+  }
+
+  /* Clean focus ring using navy */
+  *:focus-visible {
+    outline: 2px solid #520061;
+    outline-offset: 2px;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Sidebar transition */
+@layer utilities {
+  .sidebar-transition {
+    transition: width 0.25s ease;
+  }
 }

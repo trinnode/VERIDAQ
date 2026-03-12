@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2, Building2, Lock, User } from "lucide-react";
@@ -49,7 +48,16 @@ export default function SettingsPage() {
     reset: resetProfile,
     formState: { errors: profileErrors, isSubmitting: profileSubmitting, isDirty: profileDirty },
   } = useForm<ProfileValues>({
-    resolver: zodResolver(profileSchema),
+    resolver: async (values) => {
+      const r = profileSchema.safeParse(values);
+      if (r.success) return { values: r.data, errors: {} };
+      const errs: Record<string, { type: string; message: string }> = {};
+      for (const issue of r.error.issues) {
+        const k = String(issue.path[0] ?? "");
+        if (k) errs[k] = { type: "validation", message: issue.message };
+      }
+      return { values: {} as ProfileValues, errors: errs };
+    },
     defaultValues: {
       name: profile?.name ?? "",
       email: profile?.email ?? "",
@@ -93,7 +101,18 @@ export default function SettingsPage() {
     handleSubmit: handlePwdSubmit,
     reset: resetPwd,
     formState: { errors: pwdErrors, isSubmitting: pwdSubmitting },
-  } = useForm<PasswordValues>({ resolver: zodResolver(passwordSchema) });
+  } = useForm<PasswordValues>({
+    resolver: async (values) => {
+      const r = passwordSchema.safeParse(values);
+      if (r.success) return { values: r.data, errors: {} };
+      const errs: Record<string, { type: string; message: string }> = {};
+      for (const issue of r.error.issues) {
+        const k = String(issue.path[0] ?? "");
+        if (k) errs[k] = { type: "validation", message: issue.message };
+      }
+      return { values: {} as PasswordValues, errors: errs };
+    },
+  });
 
   async function onPasswordSubmit(values: PasswordValues) {
     if (!token) return;

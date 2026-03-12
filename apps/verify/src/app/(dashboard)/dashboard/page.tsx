@@ -16,11 +16,11 @@ export default function DashboardPage() {
   const { data: profileData, isLoading: profileLoading } = useProfile();
   const { data: verifications, isLoading: verificationsLoading } = useVerifications();
 
-  const remaining = profileData?.freeVerificationsRemaining ?? 0;
+  const remaining = (profileData?.freeVerificationsLimit ?? 5) - (profileData?.freeVerificationsUsed ?? 0);
   const lowQuota = remaining <= 1 && !profileLoading;
   const noQuota = remaining === 0 && !profileLoading;
 
-  const recent = verifications?.slice(0, 5) ?? [];
+  const recent = verifications?.records?.slice(0, 5) ?? [];
 
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8">
@@ -91,7 +91,7 @@ export default function DashboardPage() {
             {verificationsLoading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
-              <span className="text-3xl font-bold text-navy">{verifications?.length ?? 0}</span>
+              <span className="text-3xl font-bold text-navy">{verifications?.total ?? 0}</span>
             )}
           </CardContent>
         </Card>
@@ -106,7 +106,7 @@ export default function DashboardPage() {
               <Skeleton className="h-8 w-20" />
             ) : (
               <Badge variant="muted" className="text-sm">
-                {profileData?.employer.subscriptionTier ?? "FREE"}
+                {profileData?.subscriptionTier ?? "FREE"}
               </Badge>
             )}
           </CardContent>

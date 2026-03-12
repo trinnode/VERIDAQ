@@ -45,8 +45,8 @@ export default function SettingsPage() {
 
   // Populate form when data loads
   React.useEffect(() => {
-    if (profileData?.employer) {
-      const e = profileData.employer;
+    if (profileData) {
+      const e = profileData;
       profileForm.reset({
         companyName: e.companyName ?? "",
         email: e.email ?? "",

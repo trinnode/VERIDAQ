@@ -59,6 +59,16 @@ export async function buildApp() {
     return { status: "ok", timestamp: new Date().toISOString() };
   });
 
+  app.get("/status", async () => {
+    return {
+      status: "ok",
+      version: "1.0.0",
+      queueEnabled: !env.DISABLE_QUEUE,
+      environment: env.NODE_ENV,
+      timestamp: new Date().toISOString(),
+    };
+  });
+
   await app.register(authRoutes, { prefix: "/v1/auth" });
   await app.register(institutionRoutes, { prefix: "/v1/institutions" });
   await app.register(employerRoutes, { prefix: "/v1/employers" });

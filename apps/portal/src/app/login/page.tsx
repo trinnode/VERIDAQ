@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2, ShieldCheck } from "lucide-react";
@@ -28,7 +27,18 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginValues>({ resolver: zodResolver(schema) });
+  } = useForm<LoginValues>({
+    resolver: async (values) => {
+      const r = schema.safeParse(values);
+      if (r.success) return { values: r.data, errors: {} };
+      const errs: Record<string, { type: string; message: string }> = {};
+      for (const issue of r.error.issues) {
+        const k = String(issue.path[0] ?? "");
+        if (k) errs[k] = { type: "validation", message: issue.message };
+      }
+      return { values: {} as LoginValues, errors: errs };
+    },
+  });
 
   async function onSubmit(values: LoginValues) {
     try {

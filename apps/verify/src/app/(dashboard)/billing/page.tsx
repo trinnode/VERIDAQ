@@ -67,8 +67,8 @@ const PLANS = [
 export default function BillingPage() {
   const { data: profileData, isLoading } = useProfile();
 
-  const tier = profileData?.employer.subscriptionTier ?? "FREE";
-  const remaining = profileData?.freeVerificationsRemaining ?? 0;
+  const tier = profileData?.subscriptionTier ?? "FREE";
+  const remaining = (profileData?.freeVerificationsLimit ?? 5) - (profileData?.freeVerificationsUsed ?? 0);
   const isFree = tier === "FREE";
 
   return (

@@ -1,16 +1,21 @@
+import type { ReactNode } from "react";
 import type { Metadata } from "next";
-import "./globals.css";
+import { ScrollProgress } from "@/components/scroll-progress";
 import { Providers } from "@/components/providers";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VERIDAQ Console",
-  description: "Platform Administration Console",
+  title: "VERIDAQ Console — Platform Administration",
+  description: "Manage institutions, employers, KYC approvals, and audit logs.",
+  keywords: ["veridaq", "admin", "console", "credential", "management"],
+  icons: { icon: "/favicon.svg", shortcut: "/favicon.svg", apple: "/favicon.svg" },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
+        <ScrollProgress />
         <Providers>{children}</Providers>
       </body>
     </html>

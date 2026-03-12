@@ -1,131 +1,195 @@
-# VERIDAQ Monorepo
+# VERIDAQ
 
-End-to-end stack for issuing and verifying academic credentials with ZK proofs.
+Privacy-first academic credential verification, powered by zero-knowledge proofs.
 
-## 1) Local setup
+VERIDAQ lets universities issue credentials and employers verify them — without ever revealing the student's actual data. It's built on ZK-SNARKs (Groth16), backed by on-chain registries on Base Sepolia, and wrapped in a modern fullstack TypeScript monorepo.
 
-1. Install prerequisites:
-   - Node.js 20+
-   - pnpm 10+
-   - Docker + Docker Compose
-   - Foundry (`forge`, `cast`, `anvil`) for contract deployment
-2. Install dependencies:
-   - `pnpm install`
-3. Copy env template:
-   - `cp .env.example .env`
-4. Start local infra (Postgres + Redis):
-   - `docker compose up -d`
+---
 
-## 2) Pre-env simulation and quality checks
+## What's in the box
 
-Run these before filling production secrets:
+```
+apps/
+  web/       → Marketing site + unified entry point (Next.js, port 3000)
+  portal/    → Institution dashboard — upload batches, manage claims (port 3010)
+  verify/    → Employer dashboard — request verifications (port 3020)
+  console/   → Platform admin — KYC approvals, audit logs (port 3030)
 
-1. Build all workspaces:
-   - `pnpm build`
-2. Run workspace tests:
-   - `pnpm test`
-3. Run workflow simulation (offline dry run):
-   - `pnpm simulate:workflow`
+packages/
+  api/       → Fastify backend — REST API, Prisma ORM, BullMQ workers, ZKP verification
+  contracts/ → Solidity smart contracts (Foundry) — registries, paymaster, subscriptions
+  shared/    → Shared types, constants, and utilities
+```
 
-Expected simulation output includes:
-- Institution onboarding (`APPROVED`)
-- Claim creation
-- Batch processing (`QUEUED -> PROCESSING -> SUBMITTING -> CONFIRMED`)
-- Verification success + record-not-found paths
-- Credential revocation state
+## Quick start
 
-## 3) Base Sepolia environment values
+### Prerequisites
 
-Set these in `.env`:
+- **Node.js 22+** and **pnpm 10+**
+- **Docker** (for Postgres + Redis)
+- **Foundry** (`forge`, `cast`, `anvil`) — only if deploying contracts
 
-- `RPC_URL` = your Base Sepolia RPC endpoint
-- `BUNDLER_PRIVATE_KEY` = funded deploy/relayer wallet private key
-- `INSTITUTION_REGISTRY_ADDRESS`
-- `CREDENTIAL_REGISTRY_ADDRESS`
-- `REVOCATION_REGISTRY_ADDRESS`
-- `PAYMASTER_VAULT_ADDRESS`
-- `SUBSCRIPTION_MANAGER_ADDRESS`
+### 1. Clone and install
 
-Frontend app envs (per host) should point to backend:
-- `NEXT_PUBLIC_API_URL`
+```bash
+git clone <repo-url> && cd VERIDAQ
+pnpm install
+```
 
-## 4) Contract deployment to Base Sepolia (manual sequence)
+### 2. Start local infrastructure
+
+```bash
+docker compose up -d   # Postgres on 5432, Redis on 6379
+```
+
+### 3. Set up environment
+
+```bash
+cp .env.example .env
+# Edit .env — at minimum set DATABASE_URL and JWT_SECRET
+```
+
+### 4. Run database migrations
+
+```bash
+pnpm --filter @veridaq/api db:generate
+pnpm --filter @veridaq/api db:migrate
+```
+
+### 5. Seed default data
+
+```bash
+pnpm --filter @veridaq/api db:seed
+```
+
+This creates a test institution and employer. The platform admin is configured via env vars (no DB entry needed).
+
+### 6. Start everything
+
+```bash
+# Terminal 1 — API server
+pnpm --filter @veridaq/api dev
+
+# Terminal 2 — whichever frontend you're working on
+pnpm --filter @veridaq/web dev       # port 3000
+pnpm --filter portal dev             # port 3010
+pnpm --filter verify dev             # port 3020
+pnpm --filter console dev            # port 3030
+```
+
+---
+
+## Default credentials
+
+After seeding, these accounts are ready to use:
+
+| Role | App | Email | Password |
+|------|-----|-------|----------|
+| **Platform Admin** | Console (`:3030`) | `admin@veridaq.com` | `VeriAdmin2026!` |
+| **Institution** | Portal (`:3010`) | `demo@university.edu.ng` | `DemoInstitution2026!` |
+| **Employer** | Verify (`:3020`) | `hr@democorp.com` | `DemoEmployer2026!` |
+
+> The admin credentials come from `ADMIN_EMAIL` / `ADMIN_PASSWORD` env vars. Change them in `.env` or your hosting provider's environment settings for production.
+
+---
+
+## Deploying
+
+### Backend (Vercel Functions)
+
+The API runs as a Vercel Serverless Function. BullMQ workers need a persistent process (Railway, Render, or a VPS) — or set `DISABLE_QUEUE=true` to skip the queue and run without batch processing.
+
+1. Create a Vercel project pointed at `packages/api`
+2. Set all env vars from `.env.example`
+3. Deploy — the `vercel.json` in `packages/api` handles routing
+
+### Frontend apps (Vercel)
+
+Each app deploys as its own Vercel project:
+
+| App | Root Directory | Key Env Var |
+|-----|---------------|-------------|
+| `web` | `apps/web` | `NEXT_PUBLIC_API_URL` |
+| `portal` | `apps/portal` | `NEXT_PUBLIC_API_URL` |
+| `verify` | `apps/verify` | `NEXT_PUBLIC_API_URL` |
+| `console` | `apps/console` | `NEXT_PUBLIC_API_URL` |
+
+For each:
+1. Import the repo on Vercel
+2. Set the **Root Directory** to the app path
+3. Add `NEXT_PUBLIC_API_URL` pointing to your deployed API
+4. Build command: `pnpm build` (Vercel handles this with Turborepo detection)
+
+### Smart contracts (Base Sepolia)
 
 From `packages/contracts`:
 
-1. Build contracts:
-   - `forge build`
-2. Set shell vars:
-   - `export RPC_URL="<base-sepolia-rpc>"`
-   - `export PK="<deployer-private-key>"`
-   - `export ADMIN="<platform-admin-wallet-address>"`
-   - `export ENTRYPOINT="<erc4337-entrypoint-address>"`
-3. Deploy `InstitutionRegistry`:
-   - `forge create src/InstitutionRegistry.sol:InstitutionRegistry --rpc-url "$RPC_URL" --private-key "$PK" --constructor-args "$ADMIN"`
-4. Deploy `CredentialRegistry` with institution registry address:
-   - `forge create src/CredentialRegistry.sol:CredentialRegistry --rpc-url "$RPC_URL" --private-key "$PK" --constructor-args "$ADMIN" "<institution_registry_address>"`
-5. Deploy `RevocationRegistry`:
-   - `forge create src/RevocationRegistry.sol:RevocationRegistry --rpc-url "$RPC_URL" --private-key "$PK" --constructor-args "$ADMIN" "<institution_registry_address>" "<credential_registry_address>"`
-6. Deploy `PaymasterVault`:
-   - `forge create src/PaymasterVault.sol:PaymasterVault --rpc-url "$RPC_URL" --private-key "$PK" --constructor-args "$ADMIN" "$ENTRYPOINT" "<institution_registry_address>"`
-7. Deploy `SubscriptionManager`:
-   - `forge create src/SubscriptionManager.sol:SubscriptionManager --rpc-url "$RPC_URL" --private-key "$PK" --constructor-args "$ADMIN"`
-8. Paste deployed addresses into root `.env`.
+```bash
+forge build
 
-## 5) Backend deployment
+# Deploy in order: InstitutionRegistry → CredentialRegistry → RevocationRegistry → PaymasterVault → SubscriptionManager
+# See the deploy scripts in packages/contracts/script/ for details
+```
 
-1. Build API package:
-   - `pnpm --filter @veridaq/api build`
-2. Provision managed Postgres + Redis.
-3. Apply Prisma migrations in deployment environment.
-4. Set all API env vars from `.env.example`.
-5. Start API process (container or Node process manager).
-6. Verify health and auth endpoints.
+Paste the deployed addresses into your `.env`.
 
-## 6) Frontend deployment
+---
 
-Apps:
-- `apps/portal` (institution)
-- `apps/verify` (employer)
-- `apps/console` (admin)
+## Architecture
 
-For each app (Vercel recommended):
-1. Create project from repo.
-2. Set root directory to app path (for example `apps/portal`).
-3. Add env: `NEXT_PUBLIC_API_URL=<deployed_api_url>`.
-4. Build command: `pnpm build`.
-5. Deploy.
+```
+Employer (verify app)                Institution (portal app)
+       │                                      │
+       │  POST /v1/verifications              │  POST /v1/institutions/me/batches
+       ▼                                      ▼
+   ┌───────────────────────────────────────────────┐
+   │                  Fastify API                   │
+   │                                               │
+   │  Auth (JWT + scrypt)  │  Rate limiting        │
+   │  File upload          │  Audit logging        │
+   └───────────┬───────────┴───────────┬───────────┘
+               │                       │
+        ZKP Verifier              BullMQ Worker
+        (snarkjs)                 (batch processor)
+               │                       │
+               ▼                       ▼
+   ┌──────────────────┐    ┌──────────────────┐
+   │   PostgreSQL     │    │   Base Sepolia   │
+   │   (Prisma ORM)   │    │   (on-chain      │
+   │                  │    │    registries)    │
+   └──────────────────┘    └──────────────────┘
+```
 
-## 7) Manual data initialization
+**ZKP flow**: Institutions upload credential batches → data is hashed and committed on-chain → employers submit verification requests with Groth16 proofs → the API verifies the proof off-chain using snarkjs and checks the nullifier against the on-chain RevocationRegistry. No personal data leaves the system.
 
-After backend and contracts are live:
+---
 
-1. Create platform admin account in DB.
-2. Seed initial institution and employer records.
-3. Approve at least one institution KYC in admin console.
-4. Register institution metadata on-chain through admin workflow.
-5. Top up sponsored pool and institution paymaster balances.
-6. Create at least one claim definition from portal.
-7. Upload first sample batch and verify status reaches `CONFIRMED`.
-8. Execute one employer verification request end-to-end.
+## Project scripts
 
-## 8) Publish to GitHub
+```bash
+pnpm build               # Build everything (Turborepo)
+pnpm test                # Run all tests
+pnpm dev                 # Dev mode for web app
 
-1. Initialize and review state:
-   - `git status`
-2. Stage and commit:
-   - `git add .`
-   - `git commit -m "stabilize monorepo build, tests, and Base Sepolia docs"`
-3. Create remote repo and push:
-   - `git remote add origin <your-github-repo-url>`
-   - `git push -u origin main`
+# API-specific
+pnpm --filter @veridaq/api dev           # Start API in watch mode
+pnpm --filter @veridaq/api db:migrate    # Run Prisma migrations
+pnpm --filter @veridaq/api db:seed       # Seed default data
+pnpm --filter @veridaq/api db:studio     # Open Prisma Studio
+```
 
-## 9) Production checklist
+---
 
-- `pnpm build` passes
-- `pnpm test` passes
-- `pnpm simulate:workflow` passes
-- Base Sepolia contract addresses set
-- API reachable from all three frontends
-- SMTP and storage configured
-- At least one full upload + verify flow validated live
+## Tech stack
+
+- **Frontend**: Next.js 16, React 19, Tailwind CSS, shadcn/ui, Zustand, React Query
+- **Backend**: Fastify, Prisma 7 (with PrismaPg adapter), BullMQ, Zod
+- **Cryptography**: snarkjs (Groth16), circomlibjs (Poseidon hashing)
+- **Blockchain**: Solidity, Foundry, Base Sepolia (ERC-4337 compatible)
+- **Infrastructure**: Turborepo, pnpm workspaces, Docker Compose, Vercel
+
+---
+
+## License
+
+Private — all rights reserved.

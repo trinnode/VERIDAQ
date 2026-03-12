@@ -55,11 +55,16 @@ export const api = {
   request,
 
   // auth
-  loginInstitution: (email: string, password: string) =>
-    request<{ token: string; institution: Institution }>("/v1/auth/login", {
+  loginInstitution: async (email: string, password: string) => {
+    const res = await request<{ token: string; actor: { id: string; name: string; role: string } }>("/v1/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password, role: "INSTITUTION" }),
-    }),
+      body: JSON.stringify({ email, password, actorType: "INSTITUTION" }),
+    });
+    return {
+      token: res.token,
+      institution: { id: res.actor.id, name: res.actor.name, email } as Institution,
+    };
+  },
 
   logout: (token: string) =>
     request<void>("/v1/auth/logout", {
@@ -69,10 +74,10 @@ export const api = {
 
   // institution profile
   getProfile: (token: string) =>
-    request<Institution>("/v1/institutions/profile", { token }),
+    request<Institution>("/v1/institutions/me", { token }),
 
   updateProfile: (token: string, data: Partial<Institution>) =>
-    request<Institution>("/v1/institutions/profile", {
+    request<Institution>("/v1/institutions/me", {
       method: "PATCH",
       token,
       body: JSON.stringify(data),
@@ -80,13 +85,13 @@ export const api = {
 
   // batches
   getBatches: (token: string) =>
-    request<CredentialBatch[]>("/v1/institutions/batches", { token }),
+    request<{ batches: CredentialBatch[]; total: number }>("/v1/institutions/me/batches", { token }),
 
   getBatch: (token: string, batchId: string) =>
-    request<CredentialBatch>(`/v1/institutions/batches/${batchId}`, { token }),
+    request<CredentialBatch>(`/v1/institutions/me/batches/${batchId}`, { token }),
 
   downloadTemplate: (token: string) =>
-    fetch(`${API_BASE}/v1/institutions/upload/template`, {
+    fetch(`${API_BASE}/v1/institutions/me/batches/template`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
@@ -94,7 +99,7 @@ export const api = {
   uploadBatch: async (token: string, file: File): Promise<{ batchId: string }> => {
     const form = new FormData();
     form.append("file", file);
-    const res = await fetch(`${API_BASE}/v1/institutions/upload`, {
+    const res = await fetch(`${API_BASE}/v1/institutions/me/batches`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: form,
